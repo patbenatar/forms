@@ -53,7 +53,7 @@ end
 
 ```ruby
 class AdminForm < Forms::Form
-  embeds CompanyForm, many: true
+  embed CompanyForm, many: true
 end
 ```
 
