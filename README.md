@@ -1,64 +1,26 @@
 # Forms
 
-WIP concept for a Ruby form framework heavily inspired by django.Forms
+WIP Ruby form framework heavily inspired by django.Forms
 
-```ruby
-class UserSetupForm < Forms::Form
-  field :name
-  field :email, validates: [:email]
-  field :gender, with: { radio: { options: [:male, :female] } }
-  field :birthdate, with: :date
+### Key Components
 
-  # Basic
-  field :name, :string # Forms::TextField.new(:name)
-  field :age, :integer # Forms::IntegerField.new(:age)
-  field :birthday, :date # Forms::DateField.new(:birthday)
-
-  # Validations at form level
-  field :email, :string
-  validate :email_is_unique
-
-  def email_is_unique
-    #...
-  end
-
-  # Options for field, validate at that level
-  field :email, string: { validates: [:email] }
-  field :email, string: { editor: :email } # Forms::TextField.new(:email, editor: :email)
-
-  # Options for editor
-  field :gender, string: { editor: { radio: { choices: %w[male female] } } }
-  field :gender, string: :gender
-
-  # Forms::TextField.new(:gender, editor: { radio: { choices: %w[male female] } })
-  # => Forms::RadioEditor.new(choices: %w[male female])
-
-  def initialize
-    fields[:name] = Forms::TextField.new(:name)
-  end
-end
-```
-
-
-### required API for any "component": Field, Editor, Group
-
-* initialize(namespace, options) => namespace is an array
-* value=(value)
-* value
-* parse(params)
-* render
-
-
-# Outdated README, original documentation.. will update soon:
-
-# SuperRadForm
-
-### Key components
-
-* __Form__: Connects resources (models) with form fields.
+* __Form__: A collection of fields that can be rendered to screen and used to
+  parse incoming HTTP params.
 * __Field__: Converts strings submitted from HTML forms into more
   relevant data types, and vice versa.
-* __Presenter__: Renders the field to the screen as HTML.
+* __Editor__: Renders the field to the screen as HTML.
+
+#### Component API
+
+All of the above behave as "Components" of a form, and thus possess the
+ability to be nested in all sorts of fun ways. Components must implement the
+following interface:
+
+* `initialize(namespace, options)` Where namespace is an array in increasing order of specificity
+* `value=(value)`
+* `value`
+* `parse(params)`
+* `render`
 
 ## Form Objects
 
@@ -67,12 +29,12 @@ Live in `app/forms`. Connects resources (models) with form fields.
 ### Single resource
 
 ```ruby
-class UserForm < SuperRadForm
+class UserForm < Forms::Form
   field :name
   field :phone_number
 end
 
-class CompanyForm < SuperRadForm
+class CompanyForm < Forms::Form
   field :name
 end
 ```
@@ -80,7 +42,7 @@ end
 ### Nested resources
 
 ```ruby
-class EmploymentForm < SuperRadForm
+class EmploymentForm < Forms::Form
   field :date_hired
   field :title
 
@@ -91,52 +53,110 @@ end
 
 ### Fields
 
-Custom ones live in `app/forms/fields`.
 Converts strings submitted from HTML forms into more relevant data
 types, and vice versa.
 
 ```ruby
-class UserForm < SuperRadForm
-  field :is_admin, with: SuperRadForm::Fields::BooleanField
+class UserForm < Forms::Form
+  field :is_admin, :boolean
 end
 ```
 
-### Presenters
+### Editors
 
-Custom ones live in `app/forms/presenters`.
 Renders the actual attribute to the screen as HTML. Upon submission,
 extracts its relevant params and returns them to a format the Field
 can understand. For instance, a date may be rendered as three separate
 inputs but the Field only cares about the combined value of those inputs.
 
 ```ruby
-class UserForm < SuperRadForm
-  field :phone_number,
-    presenter: SuperRadForm::Presenters::PhoneNumberField
+class UserForm < Forms::Form
+  field :phone_number, string: :phone_number
+
+  # Options for editor:
+  field :gender, string: { radio: { options: %w[male female] } }
 end
 ```
 
-### Validations
+### Validations (future)
 
 ```ruby
 class UserForm < SuperRadForm
-  field :name,
-    validates: { presence: true }
+  # Validate at field level
+  field :name, string: { validates: { presence: true } }
+
+  # Validate at form level
+  validate :name_is_unique
+
+  # Validate at editor level
+  field :name, string: { editor: { text: { validates: { presence: true } } } }
 end
 ```
 
-## Controller
+### Loading (future)
 
-### Basic usage
+...coming...
+
+#### Nested forms (future)
 
 ```ruby
 class EmploymentsController < ApplicationController
   def new
-    @user_form = UserForm.new(params, User.find(params[:id]))
+    @employment_form = EmploymentForm.new(
+      Employment.find(params[:id]),
+      user_form: current_user,
+      company_form: current_user.company
+    )
+  end
+end
+```
+
+### Saving (future)
+
+...coming...
+
+### Rendering
+
+Forms can render their fields easily:
+
+```ruby
+form = MyForm.new
+form.render
+```
+
+#### Detailed Rendering (future)
+
+...coming... Render each field or editor individually
+
+## Example Rails Usage
+
+### Controller (future)
+
+```ruby
+class EmploymentsController < ApplicationController
+  def new
+    @user_form = UserForm.new
   end
 
   def create
-    @user_form = UserForm.new(params, User.find(params[:id]))
+    @user_form = UserForm.new
+    @user_form.parse(params)
+
+    if @user_form.save
+      # ...
+    else
+      render :new
+    end
+  end
+
+  def edit
+    @user_form = UserForm.new(User.find(params[:id]))
+  end
+
+  def update
+    @user_form = UserForm.new(User.find(params[:id]))
+    @user_form.parse(params)
+
     if @user_form.save
       # ...
     else
@@ -146,47 +166,16 @@ class EmploymentsController < ApplicationController
 end
 ```
 
-### Nested forms
+### View
 
-```ruby
-class EmploymentsController < ApplicationController
-  def new
-    @employment_form = EmploymentForm.new(
-      params,
-      Employment.find(params[:id]),
-      user_form: current_user,
-      company_form: current_user.company
-    )
-  end
-end
-```
-
-## View
-
-### Explicit rendering
+Form objects render the contents of a form without a wrapping `<form>` tag or
+submit button. Because where and how you submit your form can be unique to
+different use cases, we leave that up to you.
 
 ```html
 <h1>Become an Employee!</h1>
-<%= @employment_form.render %>
-```
-
-### Implicit rendering (`to_s`)
-
-```html
-<%= @employment_form %>
-```
-
-## But what about updating?
-
-Not sure yet. Pair model attributes with form fields manually in the
-form init? I'd like to avoid assuming a one-to-one relationship between
-fields and model attributes.
-
-```ruby
-class UserForm < SuperRadForm
-  def initialize(*args)
-    super
-    name = resource.name
-  end
-end
+<%= form_tag employment_path, method: :post do %>
+  <%= @employment_form.render %>
+  <%= submit_tag %>
+<% end %>
 ```
