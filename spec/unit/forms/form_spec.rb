@@ -1,5 +1,7 @@
 require "spec_helper"
 
+Forms::SomeCoolCustomField = Class.new(Forms::Field)
+
 describe Forms::Form do
   subject { described_class.new }
 
@@ -33,10 +35,6 @@ describe Forms::Form do
   describe "#initialize" do
     after do
       described_class.field_intents = nil # reset
-    end
-
-    before(:all) do
-      Forms::SomeCoolCustomField = Class.new(Forms::Field)
     end
 
     context "with valid field types" do
@@ -102,8 +100,6 @@ describe Forms::Form do
 
   context "with some registered field_intents" do
     before(:all) do
-      Forms::SomeCoolCustomField = Class.new(Forms::Field)
-
       described_class.field :name
       described_class.field :email
     end

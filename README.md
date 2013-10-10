@@ -69,6 +69,11 @@ class UserForm < Forms::Form
 end
 ```
 
+#### Included Fields
+
+* `:string`
+* `:boolean`
+
 ### Editors
 
 Renders the actual attribute to the screen as HTML. Upon submission,
@@ -85,6 +90,11 @@ class UserForm < Forms::Form
   field :gender, string: { radio: { options: %w[male female] } }
 end
 ```
+
+#### Included Editors
+
+* `:text`
+* `:checkbox`
 
 ### Validations (future)
 
