@@ -24,9 +24,7 @@ following interface:
 
 ## Form Objects
 
-Live in `app/forms`. Connects resources (models) with form fields.
-
-### Single resource
+### Simple Forms
 
 ```ruby
 class UserForm < Forms::Form
@@ -39,7 +37,7 @@ class CompanyForm < Forms::Form
 end
 ```
 
-### Nested resources
+### Nested Forms (future)
 
 ```ruby
 class EmploymentForm < Forms::Form
@@ -51,6 +49,14 @@ class EmploymentForm < Forms::Form
 end
 ```
 
+### Nested Collections (future)
+
+```ruby
+class AdminForm < Forms::Form
+  embeds CompanyForm, many: true
+end
+```
+
 ### Fields
 
 Converts strings submitted from HTML forms into more relevant data
@@ -58,6 +64,7 @@ types, and vice versa.
 
 ```ruby
 class UserForm < Forms::Form
+  # Use a Boolean type field
   field :is_admin, :boolean
 end
 ```
@@ -71,6 +78,7 @@ inputs but the Field only cares about the combined value of those inputs.
 
 ```ruby
 class UserForm < Forms::Form
+  # Use a special editor for phone numbers
   field :phone_number, string: :phone_number
 
   # Options for editor:
