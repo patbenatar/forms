@@ -46,7 +46,7 @@ class UserForm < Forms::Component
 
   def available_pricing_plans
     if my_model.is_cheap?
-      ["Free Plan", Plan 1", "Plan 2"]
+      ["Free Plan", "Plan 1", "Plan 2"]
     else
       ["Plan 3", "Plan 4"]
     end
